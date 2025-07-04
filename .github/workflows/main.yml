@@ -2,7 +2,7 @@ name: Booking Check Every 5 Min
 
 on:
   schedule:
-    - cron: '*/5 * * * *'  # every 5 minutes UTC
+    - cron: "*/5 * * * *" # every 5 minutes UTC
   workflow_dispatch:
 
 jobs:
@@ -16,20 +16,18 @@ jobs:
       - name: 🟢 Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '20'
+          node-version: "20"
 
-      - name: 📦 Install dependencies
-        run: npm install
+      - name: 📦 Install Node dependencies (including Puppeteer)
+        run: npm ci
 
-      - name: 🧹 Replace puppeteer-core with puppeteer
-        run: |
-          npm uninstall puppeteer-core
-          npm install puppeteer
-      - name: 🔧 Install Puppeteer dependencies
+      - name: 🔧 Install OS libraries for Chrome
         run: |
           sudo apt-get update
-          sudo apt-get install -y libnss3 libatk-bridge2.0-0 libxss1 libgbm1 libgtk-3-0 libasound2t64
+          sudo apt-get install -y libnss3 libatk-bridge2.0-0 libxss1 libgbm1 libgtk-3-0 libasound2
 
+      - name: 📥 Download a compatible Chrome build for Puppeteer
+        run: npx puppeteer browsers install chrome
 
       - name: 🚀 Run booking.js script
         env:
