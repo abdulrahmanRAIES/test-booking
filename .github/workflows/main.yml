@@ -24,13 +24,16 @@ jobs:
       - name: 🔧 Install OS libraries for Chrome
         run: |
           sudo apt-get update
-          sudo apt-get install -y libnss3 libatk-bridge2.0-0 libxss1 libgbm1 libgtk-3-0 libasound2t64
+          sudo apt-get install -y libnss3 libatk-bridge2.0-0 libxss1 libgbm1 libgtk-3-0 libasound2
 
       - name: 📥 Download a compatible Chrome build for Puppeteer
         run: npx puppeteer browsers install chrome
 
       - name: 🚀 Run booking.js script
+        # Script supports the following parameters:
+        # --dryrun : Only check availability without making bookings
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          CI: "true"
         run: node booking.js

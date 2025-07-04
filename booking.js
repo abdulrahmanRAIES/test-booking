@@ -1,6 +1,12 @@
 const puppeteer = require("puppeteer");
-const TELEGRAM_TOKEN = "7775218746:AAFbprwzBX5FR_0mzKruJoCekBht5GMikFw";
-const TELEGRAM_CHAT_ID = "-4821920818";
+const TELEGRAM_TOKEN =
+  process.env.TELEGRAM_TOKEN ||
+  "7775218746:AAFbprwzBX5FR_0mzKruJoCekBht5GMikFw";
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || "-4821920818";
+
+// Parse command line arguments
+const args = process.argv.slice(2);
+const isDryRun = args.includes("--dryrun");
 
 const ACCOUNTS = [
   { email: "slakhou.98@gmail.com", password: "Aa0555320629" },
@@ -31,6 +37,16 @@ async function withTimeout(promise, ms, step) {
 async function sendTelegram(text) {
   const stamp = new Date().toLocaleString("en-GB", { hour12: false });
   const message = `[${stamp}] ${text}`;
+
+  // Log to console
+  console.log(message);
+
+  // Skip actual telegram send if in dry run mode
+  if (isDryRun) {
+    console.log("(Dry run: Skipping Telegram send)");
+    return;
+  }
+
   try {
     const url = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`;
     const fetchFn = global.fetch
@@ -89,7 +105,7 @@ async function prepareForm(page) {
     await page.evaluate(() => {
       const opts = Array.from(document.querySelectorAll("mat-option"));
       const mission = opts.find(
-        (o) => (o.textContent || "").trim() === "بعثة ستوكهولم"
+        (o) => (o.textContent || "").trim() === "بعثة الرياض"
       );
       if (mission) mission.click();
     });
@@ -229,9 +245,13 @@ async function submitBooking(page) {
   let availableDay = null;
   {
     const browser = await puppeteer.launch({
-      headless: false,
+      headless: process.env.CI === "true" ? "new" : false,
       defaultViewport: null,
       timeout: 0,
+      args:
+        process.env.CI === "true"
+          ? ["--no-sandbox", "--disable-setuid-sandbox"]
+          : [],
     });
     const page = await browser.newPage();
     try {
@@ -256,12 +276,22 @@ async function submitBooking(page) {
 
   if (!availableDay) return; // nothing to book
 
+  // Stop after checking availability in dry run mode
+  if (isDryRun) {
+    console.log("Dry run complete - exiting without making actual bookings");
+    return;
+  }
+
   // 2) Iterate over each account and book
   for (const { email, password } of ACCOUNTS) {
     const browser = await puppeteer.launch({
-      headless: false,
+      headless: process.env.CI === "true" ? "new" : false,
       defaultViewport: null,
       timeout: 0,
+      args:
+        process.env.CI === "true"
+          ? ["--no-sandbox", "--disable-setuid-sandbox"]
+          : [],
     });
     const page = await browser.newPage();
     // page.setDefaultTimeout(30_000);  // still keeps internal waits short if desired
